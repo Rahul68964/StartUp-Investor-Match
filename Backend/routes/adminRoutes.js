@@ -109,7 +109,7 @@ router.get('/approve/startup/:startup_id', async (req, res) => {
     }
 });
 
-router.get('/approve/startup/:investor_id', async (req, res) => {
+router.get('/approve/investor/:investor_id', async (req, res) => {
 
     try {
         const investorId = req.params.investor_id;

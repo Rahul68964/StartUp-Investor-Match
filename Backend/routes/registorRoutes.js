@@ -3,9 +3,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Investor = require('../models/investorRegistration.js');
 const Startup = require('../models/startupRegistration.js');
-
+const cookieParser = require('cookie-parser');
 const router = express.Router();
-const JWT_SECRET = 'your_jwt_secret_key'; // Replace this with an environment variable in production
+const JWT_SECRET = 'secret_key'; // Replace this with an environment variable in production
 
 router.post('/', async (req, res) => {
   try {
@@ -40,10 +40,15 @@ router.post('/', async (req, res) => {
     await newUser.save();
 
     const token = jwt.sign(
-      { id: newUser._id, email: newUser.email, userType },
+      { email : newUser.email},
       JWT_SECRET,
       { expiresIn: '1d' }
     );
+    res.cookie("token", token, {
+      httpOnly: true,  
+      secure: false,   
+      sameSite: "Lax"  
+    });
 
     res.status(201).json({
       success: true,

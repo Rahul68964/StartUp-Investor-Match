@@ -4,7 +4,8 @@ const { v2: cloudinary } = require('cloudinary');
 const router = express.Router();
 const streamifier = require('streamifier');
 const multer = require('multer');
-
+const emailFinder = require('../middleware/emailFinder.js')
+const startupRegistration = require('../models/startupRegistration.js')
 
 const storage = multer.diskStorage({
   filename: function (req, file, callback) {
@@ -26,7 +27,9 @@ const uploadToCloudinary = (fileBuffer, folderName) => {
   });
 };
 
-router.post('/addStartup', upload.fields([
+router.post('/addStartup',
+  emailFinder,
+  upload.fields([
   { name: 'certificateOfIncorporation', maxCount: 1 },
   { name: 'panCard', maxCount: 1 },
   { name: 'aadharCard', maxCount: 1 },
@@ -58,9 +61,13 @@ router.post('/addStartup', upload.fields([
             })
           );
           console.log("Cloudinary upload successful");
+
+          const email  = req.email;
+          const user = await startupRegistration.findOne({email});
     
           try {
             const startup = new Startup({
+              userId: user._id,
               company,
               founded,
               headquarters,

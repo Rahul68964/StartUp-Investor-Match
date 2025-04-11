@@ -3,6 +3,11 @@ const StartupRegistration = require('../models/startupRegistration.js');
 
 
 const startupSchema = new mongoose.Schema({
+  userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'InvestorRegistration',  
+      required: true
+    },
   company: {
     type: String,
     required: true

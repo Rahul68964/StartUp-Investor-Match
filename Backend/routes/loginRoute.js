@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const Investor = require('../models/investorRegistration.js');
 const Startup = require('../models/startupRegistration.js');
 const router = express.Router();
-const JWT_SECRET = 'your_jwt_secret_key'; 
+const JWT_SECRET = 'secret_key';
 
 router.post('/', async (req, res) => {
   try {
@@ -20,24 +20,29 @@ router.post('/', async (req, res) => {
     } else if (userType === 'startup') {
       existingUser = await Startup.findOne({ email });
     } else {
-      return res.status(400).json({ success:false, message: 'Invalid user type' });
+      return res.status(400).json({ success: false, message: 'Invalid user type' });
     }
 
     if (!existingUser) {
-      return res.status(409).json({ success:false, message: 'User not exists' });
+      return res.status(409).json({ success: false, message: 'User not exists' });
     }
 
     const isPasswordMatch = await bcrypt.compare(password, existingUser.password);
 
-    if (!isPasswordMatch) { 
-        return res.status(401).json({ success:false, message: 'Invalid credentials' });
+    if (!isPasswordMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
     const token = jwt.sign(
-      { id: existingUser._id, email: existingUser.email, userType },
+      { email: existingUser.email },
       JWT_SECRET,
       { expiresIn: '1d' }
     );
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax"
+    });
 
 
     res.status(201).json({
@@ -53,7 +58,7 @@ router.post('/', async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({success:false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

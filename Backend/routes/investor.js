@@ -4,7 +4,8 @@ const { v2: cloudinary } = require('cloudinary');
 const router = express.Router();
 const streamifier = require('streamifier');
 const multer = require('multer');
-
+const emailFinder = require('../middleware/emailFinder.js')
+const InvestorRegistration = require('../models/investorRegistration.js')
 
 const storage = multer.diskStorage({
   filename: function (req, file, callback) {
@@ -26,7 +27,9 @@ const uploadToCloudinary = (fileBuffer, folderName) => {
   });
 };
 
-router.post('/kyc', upload.fields([
+router.post('/kyc',
+  emailFinder,
+  upload.fields([
   { name: 'aadharCardPhoto', maxCount: 1 },
   { name: 'panCardPhoto', maxCount: 1 }
 ]), async (req, res) => {
@@ -35,7 +38,6 @@ router.post('/kyc', upload.fields([
 
     // Extract data from request body
     const {
-      userId,
       fullName,
       mobileNumber,
       panNumber,
@@ -70,10 +72,12 @@ router.post('/kyc', upload.fields([
       );
       console.log("Cloudinary upload successful");
 
-      // Create and save investor
+      const email = req.email;
+      const user = await InvestorRegistration.findOne({email});
+
       try {
         const investor = new Investor({
-          userId,
+          userId:user._id,
           fullName,
           mobileNumber,
           panNumber,
