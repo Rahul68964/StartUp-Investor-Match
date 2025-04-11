@@ -34,7 +34,7 @@ app.use('/api/investors', investorRoutes);
 app.use('/api/register', registorRoutes);
 app.use('/api/login', loginRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/auth-status', auth_status);
+app.use('/api/getEmail', auth_status);
 
 
 

@@ -10,11 +10,9 @@ const startupSchema = new mongoose.Schema({
     },
   company: {
     type: String,
-    required: true
   },
   email: {
     type: String,
-    required: true
   },
   founded: {
     type: Number,

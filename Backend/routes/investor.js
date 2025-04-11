@@ -133,6 +133,31 @@ router.post('/kyc',
   }
 });
 
+router.post('/isInvestorApproved', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authorization token missing or invalid' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, 'secret_key');
+    const investorEmail = decoded.email;
+
+    const investor = await Investor.findOne({ email: investorEmail });
+    if (!investor) {
+      return res.status(404).json({ success: false, message: 'Investor not found' });
+    }
+    if (investor.status === 'approved') {
+      return res.status(200).json({ success: true, message: 'Investor is approved' });
+    }
+    return res.status(200).json({ success: false, message: 'Startup is not approved' });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+})
 
 router.get('/allStartups', async (req, res) => {
   try {

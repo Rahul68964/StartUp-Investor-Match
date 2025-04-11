@@ -17,7 +17,7 @@ router.get('/', (req, res) => {
         
         res.json({ 
                     loggedIn: true,
-                    username: decoded.email 
+                    email: decoded.email 
                 });
     });
 });

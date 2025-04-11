@@ -7,7 +7,7 @@ const multer = require('multer');
 const emailFinder = require('../middleware/emailFinder.js')
 const startupRegistration = require('../models/startupRegistration.js')
 const Investor = require('../models/investor.js');
-
+const jwt = require('jsonwebtoken');
 
 
 
@@ -135,24 +135,59 @@ router.get('/allInvestors', async (req, res) => {
   }
 })
 
+router.post('/isStartupApproved', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authorization token missing or invalid' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, 'secret_key');
+    const startupEmail = decoded.email;
+
+    const startup = await Startup.findOne({ email: startupEmail });
+    if (!startup) {
+      return res.status(404).json({ success: false, message: 'Startup not found' });
+    }
+    if (startup.status === 'approved') {
+      return res.status(200).json({ success: true, message: 'Startup is approved' });
+    }
+    return res.status(200).json({ success: false, message: 'Startup is not approved' });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+})
+
 
 
 
 router.post('/pitch/:investor_id', async (req, res)=>{
   try {
 
-    const { investor_id } = req.params;
-    const { startupEmail } = req.body;
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authorization token missing or invalid' });
+    }
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, 'secret_key');
+    const startupEmail = decoded.email;
 
+    const investor_id  = req.params.investor_id;
     const investor = await Investor.findById(investor_id);
     if (!investor) {
       return res.status(404).json({ success: false, message: 'Investor not found' });
     }
 
-    const startup = await Startup.findById({email:startupEmail});
+    console.log(investor);
+
+    const startup = await Startup.findOne({ email: startupEmail });
     if (!startup) {
       return res.status(404).json({ success: false, message: 'Startup not found' });
     }
+    console.log(startup);
 
     investor.StartUp_pitched.push(startup.email);
     await investor.save();
@@ -160,9 +195,10 @@ router.post('/pitch/:investor_id', async (req, res)=>{
     return res.status(200).json({ success: true, message: 'Startup pitched successfully' });
     
   } catch (error) {
-    
+    console.log(error);
+    return res.status(500).json({ success: false, message: error.message });
   }
-})
+});
 
 
 
