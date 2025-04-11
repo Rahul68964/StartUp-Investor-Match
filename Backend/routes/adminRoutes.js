@@ -113,12 +113,12 @@ router.get('/approve/investor/:investor_id', async (req, res) => {
 
     try {
         const investorId = req.params.investor_id;
-        const investor = await Startup.find({ _id:investorId});
+        const investor = await Investor.find({ _id:investorId});
 
         if (!investor) {
             return res.status(404).json({ success:false, message: 'No investor found' });
         }
-        const newInvestorData = await Startup.findByIdAndUpdate(investorId, { status: 'approved' }, { new: true });
+        const newInvestorData = await Investor.findByIdAndUpdate(investorId, { status: 'approved' }, { new: true });
 
 
         if (!newInvestorData) {

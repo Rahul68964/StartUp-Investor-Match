@@ -28,7 +28,6 @@ const uploadToCloudinary = (fileBuffer, folderName) => {
 };
 
 router.post('/addStartup',
-  emailFinder,
   upload.fields([
   { name: 'certificateOfIncorporation', maxCount: 1 },
   { name: 'panCard', maxCount: 1 },
@@ -37,6 +36,7 @@ router.post('/addStartup',
 ]), async (req, res) => {
   try {
     const {
+      email,
       company,
       founded,
       headquarters,
@@ -62,12 +62,13 @@ router.post('/addStartup',
           );
           console.log("Cloudinary upload successful");
 
-          const email  = req.email;
+         
           const user = await startupRegistration.findOne({email});
-    
+          
           try {
             const startup = new Startup({
               userId: user._id,
+              email,
               company,
               founded,
               headquarters,

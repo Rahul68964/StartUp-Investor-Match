@@ -12,6 +12,10 @@ const startupSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  email: {
+    type: String,
+    required: true
+  },
   founded: {
     type: Number,
     required: true

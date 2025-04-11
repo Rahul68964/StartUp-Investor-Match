@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Investor = require('../models/investorRegistration.js');
 const Startup = require('../models/startupRegistration.js');
-const cookieParser = require('cookie-parser');
+const cookie = require('cookie-parser');
 const router = express.Router();
 const JWT_SECRET = 'secret_key'; // Replace this with an environment variable in production
 

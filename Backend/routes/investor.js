@@ -28,7 +28,6 @@ const uploadToCloudinary = (fileBuffer, folderName) => {
 };
 
 router.post('/kyc',
-  emailFinder,
   upload.fields([
   { name: 'aadharCardPhoto', maxCount: 1 },
   { name: 'panCardPhoto', maxCount: 1 }
@@ -39,6 +38,7 @@ router.post('/kyc',
     // Extract data from request body
     const {
       fullName,
+      email,
       mobileNumber,
       panNumber,
       aadharNumber,
@@ -72,13 +72,15 @@ router.post('/kyc',
       );
       console.log("Cloudinary upload successful");
 
-      const email = req.email;
+    
       const user = await InvestorRegistration.findOne({email});
+      console.log(user);
 
       try {
         const investor = new Investor({
           userId:user._id,
           fullName,
+          email,
           mobileNumber,
           panNumber,
           aadharNumber,
