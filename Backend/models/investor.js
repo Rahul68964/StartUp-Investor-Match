@@ -56,9 +56,16 @@ const investorSchema = new mongoose.Schema({
   maxInvestment: Number,
   
   StartUp_pitched: {
-    type: [String],
+    type: [
+      {
+        email: { type: String},
+        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
+      }
+    ],
     default: []
   },
+
+
   
   createdAt: {
     type: Date,

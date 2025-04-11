@@ -163,6 +163,11 @@ router.post('/isStartupApproved', async (req, res) => {
 
 
 
+router.post('/jwt_token', async(req, res) =>{
+  const token = jwt.sign({email: 'collegedeko@gmail.com'}, 'secret_key');
+  res.json({token});
+});
+
 
 router.post('/pitch/:investor_id', async (req, res)=>{
   try {
@@ -175,22 +180,25 @@ router.post('/pitch/:investor_id', async (req, res)=>{
     const decoded = jwt.verify(token, 'secret_key');
     const startupEmail = decoded.email;
 
+    console.log("email---------->", startupEmail);
+    console.log("token",token);
+
     const investor_id  = req.params.investor_id;
     const investor = await Investor.findById(investor_id);
     if (!investor) {
       return res.status(404).json({ success: false, message: 'Investor not found' });
     }
 
-    console.log(investor);
 
     const startup = await Startup.findOne({ email: startupEmail });
     if (!startup) {
       return res.status(404).json({ success: false, message: 'Startup not found' });
     }
-    console.log(startup);
+    console.log("Startup data",startup);
 
-    investor.StartUp_pitched.push(startup.email);
+    investor.StartUp_pitched.push({email:startupEmail, status: 'pending'});
     await investor.save();
+    console.log("Investor Data",investor);
 
     return res.status(200).json({ success: true, message: 'Startup pitched successfully' });
     
