@@ -1,36 +1,57 @@
 const mongoose = require('mongoose');
+const StartupRegistration = require('../models/startupRegistration.js');
+
 
 const startupSchema = new mongoose.Schema({
-  userId: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  companyName: {
+  company: {
     type: String,
     required: true
   },
-  pitchDeckUrl: String,
-  industry: {
-    type: String,
-    required: true
-  },
-  fundingNeeded: {
+  founded: {
     type: Number,
     required: true
   },
-  stage: {
+  headquarters: {
     type: String,
-    enum: ['seed', 'series_a', 'series_b', 'series_c', 'growth'],
     required: true
   },
-  tractionMetrics: {
-    revenue: Number,
-    users: Number,
-    growthRate: Number
+  sector: {
+    type: String,
+    required: true
   },
-  teamSize: Number,
-  location: String,
+  description: {
+    type: String,
+    required: true
+  },
+  founder: {
+    type: String,
+    required: true
+  },
+  investors: {
+    type: String,
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  certificateOfIncorporation: {
+    type: String,
+  },
+  panCard: {
+    type: String,
+  },
+  aadharCard: {
+    type: String,
+  },
+  investorAgreement: {
+    type: String,
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+
   createdAt: {
     type: Date,
     default: Date.now

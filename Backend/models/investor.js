@@ -6,24 +6,58 @@ const investorSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  firmName: {
+  fullName: {
     type: String,
     required: true
   },
-  investmentFocus: [{
-    type: String
-  }],
-  preferredStages: [{
+  mobileNumber: {
     type: String,
-    enum: ['seed', 'series_a', 'series_b', 'series_c', 'growth']
-  }],
+    required: true
+  },
+  panNumber: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  aadharNumber: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  address: {
+    type: String,
+    required: true
+  },
+  country: {
+    type: String,
+    required: true
+  },
+  pincode: {
+    type: String,
+    required: true
+  },
+  aadharCardPhoto: {
+    type: String, // You can store file path or URL
+    required: true
+  },
+  panCardPhoto: {
+    type: String, // You can store file path or URL
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+ 
   minInvestment: Number,
   maxInvestment: Number,
-  portfolioSize: Number,
+  
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
+
 
 module.exports = mongoose.model('Investor', investorSchema);

@@ -1,68 +1,123 @@
 const express = require('express');
 const Investor = require('../models/investor.js');
-
+const { v2: cloudinary } = require('cloudinary');
 const router = express.Router();
+const streamifier = require('streamifier');
+const multer = require('multer');
 
-// Get all investors
-router.get('/', async (req, res) => {
-  try {
-    const investors = await Investor.find();
-    res.json(investors);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+
+const storage = multer.diskStorage({
+  filename: function (req, file, callback) {
+    callback(null, file.originalname)
   }
-});
+})
+const upload = multer({ storage: storage });
 
-// Get investor by userId
-router.get('/:userId', async (req, res) => {
-  try {
-    const investor = await Investor.findOne({ userId: req.params.userId });
-    if (!investor) {
-      return res.status(404).json({ message: 'Investor not found' });
-    }
-    res.json(investor);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Create investor profile
-router.post('/', async (req, res) => {
-  const investor = new Investor({
-    userId: req.body.userId,
-    firmName: req.body.firmName,
-    investmentFocus: req.body.investmentFocus,
-    preferredStages: req.body.preferredStages,
-    minInvestment: req.body.minInvestment,
-    maxInvestment: req.body.maxInvestment,
-    portfolioSize: req.body.portfolioSize
+const uploadToCloudinary = (fileBuffer, folderName) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: folderName, resource_type: 'image' },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      }
+    );
+    streamifier.createReadStream(fileBuffer).pipe(stream);
   });
+};
 
+router.post('/kyc', upload.fields([
+  { name: 'aadharCardPhoto', maxCount: 1 },
+  { name: 'panCardPhoto', maxCount: 1 }
+]), async (req, res) => {
   try {
-    const newInvestor = await investor.save();
-    res.status(201).json(newInvestor);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+    console.log("Request body:", req.body);
 
-// Update investor profile
-router.patch('/:userId', async (req, res) => {
-  try {
-    const investor = await Investor.findOne({ userId: req.params.userId });
-    if (!investor) {
-      return res.status(404).json({ message: 'Investor not found' });
+    // Extract data from request body
+    const {
+      userId,
+      fullName,
+      mobileNumber,
+      panNumber,
+      aadharNumber,
+      address,
+      country,
+      pincode,
+      minInvestment,
+      maxInvestment
+    } = req.body;
+
+    if (!req.files || !req.files['aadharCardPhoto'] || !req.files['panCardPhoto']) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both Aadhar and PAN card photos are required'
+      });
     }
 
-    Object.keys(req.body).forEach(key => {
-      investor[key] = req.body[key];
-    });
+    const aadharCardPhoto = req.files['aadharCardPhoto'][0];
+    const panCardPhoto = req.files['panCardPhoto'][0];
 
-    const updatedInvestor = await investor.save();
-    res.json(updatedInvestor);
+    console.log("Starting Cloudinary upload...");
+
+    // Upload images to Cloudinary
+    try {
+      const images = [aadharCardPhoto, panCardPhoto];
+      let imagesUrl = await Promise.all(
+        images.map(async (item) => {
+          let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
+          return result.secure_url;
+        })
+      );
+      console.log("Cloudinary upload successful");
+
+      // Create and save investor
+      try {
+        const investor = new Investor({
+          userId,
+          fullName,
+          mobileNumber,
+          panNumber,
+          aadharNumber,
+          address,
+          country,
+          pincode,
+          aadharCardPhoto: imagesUrl[0],
+          panCardPhoto: imagesUrl[1],
+          minInvestment,
+          maxInvestment,
+        });
+
+        const savedInvestor = await investor.save();
+        console.log("Investor saved successfully");
+
+        // Send success response and return to prevent further execution
+        return res.status(201).json({
+          success: true,
+          message: 'Investor KYC saved',
+          investor: savedInvestor
+        });
+      } catch (dbError) {
+        console.error("Database error:", dbError);
+        return res.status(500).json({
+          success: false,
+          message: `Database error: ${dbError.message}`
+        });
+      }
+    } catch (cloudinaryError) {
+      console.error("Cloudinary error:", cloudinaryError);
+      return res.status(500).json({
+        success: false,
+        message: `Cloudinary error: ${cloudinaryError.message}`
+      });
+    }
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("General error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
+
 
 module.exports = router;

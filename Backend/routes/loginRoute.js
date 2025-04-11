@@ -3,9 +3,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Investor = require('../models/investorRegistration.js');
 const Startup = require('../models/startupRegistration.js');
-
 const router = express.Router();
-const JWT_SECRET = 'your_jwt_secret_key'; // Replace this with an environment variable in production
+const JWT_SECRET = 'your_jwt_secret_key'; 
 
 router.post('/', async (req, res) => {
   try {
@@ -24,41 +23,37 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success:false, message: 'Invalid user type' });
     }
 
-    if (existingUser) {
-      return res.status(409).json({ success:false, message: 'User already exists' });
+    if (!existingUser) {
+      return res.status(409).json({ success:false, message: 'User not exists' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const isPasswordMatch = await bcrypt.compare(password, existingUser.password);
 
-    let newUser;
-    if (userType === 'investor') {
-      newUser = new Investor({ email, password: hashedPassword });
-    } else {
-      newUser = new Startup({ email, password: hashedPassword });
+    if (!isPasswordMatch) { 
+        return res.status(401).json({ success:false, message: 'Invalid credentials' });
     }
-
-    await newUser.save();
 
     const token = jwt.sign(
-      { id: newUser._id, email: newUser.email, userType },
+      { id: existingUser._id, email: existingUser.email, userType },
       JWT_SECRET,
       { expiresIn: '1d' }
     );
 
+
     res.status(201).json({
       success: true,
-      message: `${userType} registered successfully`,
+      message: `Logined successfully`,
       token,
-      user: {
-        id: newUser._id,
-        email: newUser.email,
+      Logined_User: {
+        id: existingUser._id,
+        email: existingUser.email,
         userType,
       }
     });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({success:false, message: 'Server error' });
+    res.status(500).json({success:false, message: error.message });
   }
 });
 
