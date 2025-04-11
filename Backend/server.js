@@ -5,10 +5,10 @@ const connectDB = require('./config/db.js');
 const connectCloudinary = require('./config/cloudinary');
 const startupRoutes = require('./routes/startup.js');
 const investorRoutes = require('./routes/investor.js');
-const pitchEventRoutes = require('./routes/pitchEvents.js');
 const registorRoutes = require('./routes/registorRoutes.js');
 const loginRoutes = require('./routes/loginRoute.js');
 const adminRoutes = require('./routes/adminRoutes.js');
+const auth_status = require('./routes/auth_status.js');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
@@ -31,10 +31,10 @@ app.use(cookieParser());
 
 app.use('/api/startups', startupRoutes);
 app.use('/api/investors', investorRoutes);
-app.use('/api/pitch-events', pitchEventRoutes);
 app.use('/api/register', registorRoutes);
 app.use('/api/login', loginRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/auth-status', auth_status);
 
 
 

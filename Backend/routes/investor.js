@@ -6,6 +6,10 @@ const streamifier = require('streamifier');
 const multer = require('multer');
 const emailFinder = require('../middleware/emailFinder.js')
 const InvestorRegistration = require('../models/investorRegistration.js')
+const Startup = require('../models/startup.js');
+
+
+
 
 const storage = multer.diskStorage({
   filename: function (req, file, callback) {
@@ -13,7 +17,6 @@ const storage = multer.diskStorage({
   }
 })
 const upload = multer({ storage: storage });
-
 const uploadToCloudinary = (fileBuffer, folderName) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -26,6 +29,11 @@ const uploadToCloudinary = (fileBuffer, folderName) => {
     streamifier.createReadStream(fileBuffer).pipe(stream);
   });
 };
+
+
+
+
+
 
 router.post('/kyc',
   upload.fields([
@@ -125,5 +133,16 @@ router.post('/kyc',
   }
 });
 
+
+router.get('/allStartups', async (req, res) => {
+  try {
+      allStartUps = await Startup.find({status:'approved'});
+      res.status(200).json({success:true, startups:allStartUps});
+  } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: 'Internal Server Error' });
+  }
+
+});
 
 module.exports = router;

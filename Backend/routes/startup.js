@@ -6,6 +6,12 @@ const streamifier = require('streamifier');
 const multer = require('multer');
 const emailFinder = require('../middleware/emailFinder.js')
 const startupRegistration = require('../models/startupRegistration.js')
+const Investor = require('../models/investor.js');
+
+
+
+
+
 
 const storage = multer.diskStorage({
   filename: function (req, file, callback) {
@@ -13,7 +19,6 @@ const storage = multer.diskStorage({
   }
 })
 const upload = multer({ storage: storage });
-
 const uploadToCloudinary = (fileBuffer, folderName) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -26,6 +31,9 @@ const uploadToCloudinary = (fileBuffer, folderName) => {
     streamifier.createReadStream(fileBuffer).pipe(stream);
   });
 };
+
+
+
 
 router.post('/addStartup',
   upload.fields([
@@ -113,5 +121,49 @@ router.post('/addStartup',
         });
       }
     });
+
+
+
+router.get('/allInvestors', async (req, res) => {
+  try {
+    const allInvestors = await Investor.find({status:'approved'});
+    return res.status(200).json({success: true, investors:allInvestors });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+})
+
+
+
+
+router.post('/pitch/:investor_id', async (req, res)=>{
+  try {
+
+    const { investor_id } = req.params;
+    const { startupEmail } = req.body;
+
+    const investor = await Investor.findById(investor_id);
+    if (!investor) {
+      return res.status(404).json({ success: false, message: 'Investor not found' });
+    }
+
+    const startup = await Startup.findById({email:startupEmail});
+    if (!startup) {
+      return res.status(404).json({ success: false, message: 'Startup not found' });
+    }
+
+    investor.StartUp_pitched.push(startup.email);
+    await investor.save();
+
+    return res.status(200).json({ success: true, message: 'Startup pitched successfully' });
+    
+  } catch (error) {
+    
+  }
+})
+
+
 
 module.exports = router;

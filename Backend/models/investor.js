@@ -57,6 +57,11 @@ const investorSchema = new mongoose.Schema({
   minInvestment: Number,
   maxInvestment: Number,
   
+  StartUp_pitched: {
+    type: [String],
+    default: []
+  },
+  
   createdAt: {
     type: Date,
     default: Date.now
