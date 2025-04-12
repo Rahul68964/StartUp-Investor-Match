@@ -58,6 +58,15 @@ const startupSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
   },
+  Investor_Pitched: {
+    type: [
+      {
+        email: { type: String},
+        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
+      }
+    ],
+    default: []
+  },
 
   createdAt: {
     type: Date,

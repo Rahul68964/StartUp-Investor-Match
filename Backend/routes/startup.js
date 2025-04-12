@@ -162,9 +162,34 @@ router.post('/isStartupApproved', async (req, res) => {
 })
 
 
+router.get('/pitchedInvestors', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authorization token missing or invalid' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, 'secret_key');
+    const startupEmail = decoded.email;
+
+    const startup = await Startup.findOne({ email: startupEmail });
+    if (!startup) {
+      return res.status(404).json({ success: false, message: 'Startup not found' });
+    }
+    const pitchedInvestors = startup.Investor_Pitched;
+    return res.status(200).json({ success: true, pitchedInvestors });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+);
+
 
 router.post('/jwt_token', async(req, res) =>{
-  const token = jwt.sign({email: 'collegedeko@gmail.com'}, 'secret_key');
+  const token = jwt.sign({email: 'startup@gmail.com'}, 'secret_key');
   res.json({token});
 });
 
@@ -180,9 +205,6 @@ router.post('/pitch/:investor_id', async (req, res)=>{
     const decoded = jwt.verify(token, 'secret_key');
     const startupEmail = decoded.email;
 
-    console.log("email---------->", startupEmail);
-    console.log("token",token);
-
     const investor_id  = req.params.investor_id;
     const investor = await Investor.findById(investor_id);
     if (!investor) {
@@ -197,7 +219,10 @@ router.post('/pitch/:investor_id', async (req, res)=>{
     console.log("Startup data",startup);
 
     investor.StartUp_pitched.push({email:startupEmail, status: 'pending'});
+    startup.Investor_Pitched.push({email:investor.email, status: 'pending'});
+
     await investor.save();
+    await startup.save();
     console.log("Investor Data",investor);
 
     return res.status(200).json({ success: true, message: 'Startup pitched successfully' });

@@ -7,7 +7,7 @@ const multer = require('multer');
 const emailFinder = require('../middleware/emailFinder.js')
 const InvestorRegistration = require('../models/investorRegistration.js')
 const Startup = require('../models/startup.js');
-
+const jwt = require('jsonwebtoken');
 
 
 
@@ -29,9 +29,6 @@ const uploadToCloudinary = (fileBuffer, folderName) => {
     streamifier.createReadStream(fileBuffer).pipe(stream);
   });
 };
-
-
-
 
 
 
@@ -159,6 +156,109 @@ router.post('/isInvestorApproved', async (req, res) => {
   }
 })
 
+router.post('/approvePitchedStartup/:startupEmail', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authorization token missing or invalid' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, 'secret_key');
+
+    const investorEmail = typeof decoded === 'string' ? decoded : decoded.email;
+    if (!investorEmail) {
+      return res.status(401).json({ success: false, message: 'Invalid token payload: email not found' });
+    }
+
+    const startupEmail = req.params.startupEmail;
+
+    // Find startup by email
+    const startup = await Startup.findOne({ email: startupEmail });
+    if (!startup) {
+      return res.status(404).json({ success: false, message: 'Startup not found' });
+    }
+
+    // Find investor by email
+    const investor = await Investor.findOne({ email: investorEmail });
+    if (!investor) {
+      return res.status(404).json({ success: false, message: 'Investor not found' });
+    }
+
+    // Avoid duplicate entries
+    const existingPitchInInvestor = investor.StartUp_pitched.find(p => p.email === startupEmail);
+    if (!existingPitchInInvestor) {
+      investor.StartUp_pitched.push({ email: startupEmail, status: 'approved' });
+    } else {
+      existingPitchInInvestor.status = 'approved';
+    }
+
+    const existingPitchInStartup = startup.Investor_Pitched?.find(p => p.email === investorEmail);
+    if (!existingPitchInStartup) {
+      if (!startup.Investor_Pitched) startup.Investor_Pitched = [];
+      startup.Investor_Pitched.push({ email: investorEmail, status: 'approved' });
+    } else {
+      existingPitchInStartup.status = 'approved';
+    }
+
+    // Save both documents
+    await investor.save();
+    await startup.save();
+
+    res.status(200).json({ success: true, message: 'Startup approved successfully' });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/rejectPitchedStartup/:startupEmail', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authorization token missing or invalid' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, 'secret_key');
+    const investorEmail = decoded.email;
+
+    if (!investorEmail) {
+      return res.status(401).json({ success: false, message: 'Invalid token payload: email not found' });
+    }
+
+    const startupEmail = req.params.startupEmail;
+
+    // Find startup by email
+    const startup = await Startup.findOne({ email: startupEmail });
+    if (!startup) {
+      return res.status(404).json({ success: false, message: 'Startup not found' });
+    }
+
+    // Find investor by email
+    const investor = await Investor.findOne({ email: investorEmail });
+    if (!investor) {
+      return res.status(404).json({ success: false, message: 'Investor not found' });
+    }
+
+    
+    investor.StartUp_pitched = investor.StartUp_pitched.filter(p => p.email !== startupEmail);
+
+    startup.Investor_Pitched = (startup.Investor_Pitched || []).filter(p => p.email !== investorEmail);
+
+    await investor.save();
+    await startup.save();
+
+    res.status(200).json({ success: true, message: 'Startup rejected successfully' });
+
+  }
+  catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.get('/allStartups', async (req, res) => {
   try {
       allStartUps = await Startup.find({status:'approved'});
@@ -169,5 +269,53 @@ router.get('/allStartups', async (req, res) => {
   }
 
 });
+
+router.get('/getAllStartupsWhoPitched', async (req, res) => {
+  try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return res.status(401).json({ success: false, message: 'Authorization token missing or invalid' });
+      }
+
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, 'secret_key');
+      const investorEmail = decoded.email;
+
+      const investor = await Investor.findOne({ email: investorEmail });
+      if (!investor) {
+          return res.status(404).json({ success: false, message: 'Investor not found' });
+      }
+      
+      res.status(200).json({ success: true, startups: investor.StartUp_pitched });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+router.get('/getAllStartupsWhoPitchedAndApproved', async (req, res) => {
+  try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return res.status(401).json({ success: false, message: 'Authorization token missing or invalid' });
+      }
+
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, 'secret_key');
+      const investorEmail = decoded.email;
+
+      const investor = await Investor.findOne({ email: investorEmail });
+      if (!investor) {
+          return res.status(404).json({ success: false, message: 'Investor not found' });
+      }
+      const approvedStartups = investor.StartUp_pitched.filter(pitch => pitch.status === 'approved');
+      res.status(200).json({ success: true, startups: approvedStartups });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: error.message });
+  }
+});
+  
 
 module.exports = router;
