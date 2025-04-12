@@ -8,7 +8,7 @@ const emailFinder = require('../middleware/emailFinder.js')
 const startupRegistration = require('../models/startupRegistration.js')
 const Investor = require('../models/investor.js');
 const jwt = require('jsonwebtoken');
-
+const pitchEventModel = require('../models/pitch_events.js');
 
 
 
@@ -122,19 +122,6 @@ router.post('/addStartup',
       }
     });
 
-
-
-router.get('/allInvestors', async (req, res) => {
-  try {
-    const allInvestors = await Investor.find({status:'approved'});
-    return res.status(200).json({success: true, investors:allInvestors });
-
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ success: false, message: error.message });
-  }
-})
-
 router.post('/isStartupApproved', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -160,6 +147,19 @@ router.post('/isStartupApproved', async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 })
+
+router.get('/allInvestors', async (req, res) => {
+  try {
+    const allInvestors = await Investor.find({status:'approved'});
+    return res.status(200).json({success: true, investors:allInvestors });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+})
+
+
 
 
 router.get('/pitchedInvestors', async (req, res) => {
@@ -189,7 +189,7 @@ router.get('/pitchedInvestors', async (req, res) => {
 
 
 router.post('/jwt_token', async(req, res) =>{
-  const token = jwt.sign({email: 'startup@gmail.com'}, 'secret_key');
+  const token = jwt.sign({email: 'startup@example.com'}, 'secret_key');
   res.json({token});
 });
 
@@ -233,6 +233,28 @@ router.post('/pitch/:investor_id', async (req, res)=>{
   }
 });
 
+
+router.get('/getAllPitchEvents', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authorization token missing or invalid' });
+    }
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, 'secret_key');
+    const startupEmail = decoded.email;
+
+
+    const pitchEvents = await pitchEventModel.find({startup_mail: startupEmail});
+    if (!pitchEvents) {
+      return res.status(404).json({ success: false, message: 'No pitch events found' });
+    }
+    res.status(200).json({ success: true, pitchEvents });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 
 module.exports = router;
